@@ -38,7 +38,7 @@ function startAgentServer(worker) {
       const {target} = message;
       if (target === config.id) {
         log.info(`agent:message:emit destination found agent:${target}`, message);
-        return worker.sendToMaster(message);
+        return scServer.exchange.publish("")
       }
       log.info(`agent:message:emit agent:${target}`, message);
       return scServer.exchange.publish(`agent:${target}`, message);
