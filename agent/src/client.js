@@ -18,12 +18,7 @@ export default function client(server) {
     });
     socket.on("connect", () => {
       log.info("socketcluster client connected");
-      socket.emitAsync("agent:register", {"id": config.id, connected: []}).then((success) => {
-        log.info("register", success);
-        return cmd(socket);
-        // socket.emit("agent:message", {source: "33333", target: "33333", message: "hi"});
-        // socket.emit("agent:message", {source: "33333", target: "1234567890", message: "h22"});
-      });
+      return cmd(socket);
     });
   });
 }

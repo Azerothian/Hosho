@@ -12,17 +12,23 @@ export function run(broker) {
   client.on("connect", () => {
     return client.emit("agent:register", {"id": config.id});
   });
+  client.on("message", (channelName, packet) => { //TODO: check source stop recursive loop
+    log.info("client - message", {channelName});
+    broker.publish(channelName, packet);
+  });
   broker.on("subscribe", (channelName) => {
+    log.info("broker - subscribe", {channelName});
     return client.subscribe(channelName);
   });
   broker.on("unsubscribe", (channelName) => {
+    log.info("broker - unsubscribe", {channelName});
     return client.unsubscribe(channelName);
   });
   broker.on("publish", (channelName, message) => {
+    log.info("broker - publish", {channelName});
     return client.publish(channelName, message);
   });
 }
-
 
 // import logger from "utils/logger";
 // import socketClusterClient from "socketcluster-client";

@@ -1,5 +1,5 @@
 import logger from "utils/logger";
-import config from "config"
+import config from "config";
 const log = logger(`hosho:agent:worker:${process.pid}:`);
 export function run(host) {
   log.info("loading worker..");
@@ -38,7 +38,7 @@ function startAgentServer(worker) {
       const {target} = message;
       if (target === config.id) {
         log.info(`agent:message:emit destination found agent:${target}`, message);
-        return scServer.exchange.publish("")
+        //return scServer.exchange.publish("")
       }
       log.info(`agent:message:emit agent:${target}`, message);
       return scServer.exchange.publish(`agent:${target}`, message);
