@@ -8,17 +8,18 @@ const log = logger("hosho:agent:index:");
 
 export default function client(server) {
   server.on("ready", (app) => {
-    server.on("workerMessage", (workerId, message) => {
-      log.info("workerMessage", {workerId, message});
-    });
-    log.info("socketcluster client connecting", config.master);
-    const socket = Promise.promisifyAll(socketClusterClient.connect(config.master));
-    socket.on("agent:message", (message) => {
-      log.info("client message", message);
-    });
+    log.info("socketcluster client connecting", {hostname: "localhost", port: config.port});
+    const socket = Promise.promisifyAll(socketClusterClient.connect({hostname: "localhost", port: config.port}));
+    // socket.on("agent:message", (message) => {
+    //   log.info("client message", message);
+    // });
     socket.on("connect", () => {
       log.info("socketcluster client connected");
+      socket.subscribe(`agent:${config.id}`);
       return cmd(socket);
+    });
+    socket.on(`agent:${config.id}`, (message) => {
+      log.info("agent message recieved", message);
     });
   });
 }
