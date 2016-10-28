@@ -1,16 +1,11 @@
 import logger from "utils/logger";
-import config from "config";
-const log = logger(`hosho:agent:worker:${process.pid}:`);
+// import config from "config";
+const log = logger(`hosho:router:worker:${process.pid}:`);
 export function run(host) {
   log.info("loading worker..");
-  startAgentServer(host);
-}
-
-
-function startAgentServer(worker) {
-  const {scServer} = worker;
+  const {scServer} = host;
   scServer.on("connection", (socket) => {
-    log.info("agent connected");
+    log.info("router connected");
     const channels = {};
     socket.on("subscribe", (channelName) => {
       log.info(`subscribing client to ${channelName}`);
