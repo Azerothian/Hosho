@@ -5,6 +5,8 @@ import config from "config";
 import Promise from "bluebird";
 const log = logger("hosho:router:broker:");
 
+//TODO: only publish and subscribe "router:{id}"
+
 export function run(broker) {
   log.info(" >> Broker PID:", process.pid);
   if (config.master.hostname && config.master.port) {
