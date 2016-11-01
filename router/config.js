@@ -10,6 +10,7 @@ module.exports = {
   //   port: 1803,
   // },
   "id": process.env.AGENT_ID,
+  messagePartLength: 5, // each message part bytes
 };
 
 module.exports.default = module.exports;

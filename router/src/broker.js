@@ -26,15 +26,21 @@ export function run(broker) {
     });
     broker.on("subscribe", (channelName) => {
       log.info("broker - subscribe", {channelName});
-      return client.subscribe(channelName);
+      if (channelName.indexOf("router:") === 0) {
+        return client.subscribe(channelName);
+      }
+      return undefined;
     });
     broker.on("unsubscribe", (channelName) => {
       log.info("broker - unsubscribe", {channelName});
-      return client.unsubscribe(channelName);
+      if (channelName.indexOf("router:") === 0) {
+        return client.unsubscribe(channelName);
+      }
+      return undefined;
     });
     broker.on("publish", (channelName, message) => {
       log.info("broker - publish", {channelName});
-      if (channelName !== `router:${config.id}`) { // no need to resend is already here
+      if (channelName.indexOf("router:") === 0 && channelName !== `router:${config.id}`) { // no need to resend is already here
         return client.emit("publish", {event: channelName, data: message});
       }
       return undefined;
