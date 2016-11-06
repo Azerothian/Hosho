@@ -1,9 +1,10 @@
 import logger from "utils/logger";
+import config from "config";
 // import config from "config";
 
 //TODO: Authentication of clients
 
-const log = logger(`hosho:router:worker:${process.pid}:`);
+const log = logger(`hosho:router[${config.id}]:worker:${process.pid}:`);
 export function run(host) {
   log.info("loading worker..");
   const {scServer} = host;

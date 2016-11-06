@@ -5,8 +5,9 @@ const eslint = require("gulp-eslint");
 const del = require("del");
 const mocha = require("gulp-mocha");
 const babel = require("gulp-babel");
-const path = require("path");
-
+// const path = require("path");
+const sourceMapSupport = require("source-map-support");
+sourceMapSupport.install();
 const sourcemaps = require("gulp-sourcemaps");
 
 
@@ -35,5 +36,15 @@ gulp.task("lint", ["clean"], () => {
 gulp.task("watch", () => {
   gulp.watch("src/**/*.*", ["compile"]);
 });
+
+gulp.task("test", () => {
+  gulp.src(["build/**/*.test.js"], {read: false})
+    .pipe(mocha({
+      require: ["source-map-support/register"],
+      timeout: 30000,
+    }));
+});
+
+
 
 gulp.task("default", ["compile"]);

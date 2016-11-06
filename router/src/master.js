@@ -5,7 +5,7 @@ import {runScript} from "utils/thread";
 //TODO: have modules auto restart etc
 
 export function run(server) {
-  const log = logger("hosho:router:master:");
+  // const log = logger(`hosho:router[${config.id}]:master:`);
   server.on("ready", (app) => {
     runScript(path.join(__dirname, "modules/proxy.js"));
     runScript(path.join(__dirname, "modules/receive-queue.js"));

@@ -5,16 +5,24 @@ import redis from "utils/redis";
 import {createMD5Hash, chunkString} from "utils/text";
 import config from "config";
 import guid from "guid";
+import vars from "../vars";
 
 //This file proxy messages received via router:{id}
 //and sends out messages to outher routers
 
-const log = logger("hosho:router:modules:proxy:");
+//TODO: message validation against md5 sum
+//- message send & receive verification - ping from sender
+//- message - request missing parts
+//- create map for agents - routers
+
+
+
+const log = logger(`hosho:router[${config.id}]:modules:proxy:`);
 const rstore = redis(config.redis);
 function createMessageKey(source, target, id, prefix = "send") {
   return {
-    key: `message:${prefix}:${source}:${target}:${id}`,
-    data: `message:${prefix}:${source}:${target}:${id}:data`,
+    key: `${vars.redis.messagePrefix}:${prefix}:${source}:${target}:${id}`,
+    data: `${vars.redis.messagePrefix}:${prefix}:${source}:${target}:${id}:data`,
   };
 }
 
@@ -23,20 +31,21 @@ log.info("socketcluster client connecting", {hostname: "localhost", port: config
 const socket = Promise.promisifyAll(socketClusterClient.connect({hostname: "localhost", port: config.port}));
 socket.on("connect", () => {
   log.info("socketcluster client connected");
-  socket.subscribe(`router:${config.id}`);
-  socket.subscribe("send");
+  socket.subscribe(vars.socket.currentChannel);
+  socket.subscribe(vars.socket.sendMessage);
   const revents = redis(config.redis);
   revents.on("message", (channelName, message) => {
-    if (channelName === "hosho:messages") {
-      log.info("hosho:messages", message);
+    if (channelName === vars.redis.messagePrefix) {
+      log.info("redis message", {channelName, message});
       const e = JSON.parse(message);
-      socket.emit("publish", e);
+      return socket.emit("publish", e);
     }
+    return undefined;
   });
-  revents.subscribe("hosho:messages");
+  revents.subscribe(vars.redis.messagePrefix);
 });
 
-socket.on(`router:${config.id}`, ({source, target, id, index, total, data}) => {
+socket.on(vars.socket.currentChannel, ({source, target, id, index, total, data}) => {
   const mk = createMessageKey(source, target, id, "receive");
   log.info("router message received", {
     source, target, messageDataKey: mk.data, data, total,
@@ -52,13 +61,13 @@ socket.on(`router:${config.id}`, ({source, target, id, index, total, data}) => {
     }).then((fieldCount) => {
       log.info(`field count - ${mk.key}:`, fieldCount);
       if (fieldCount === total) {
-        return rstore.saddAsync("queue:receive", mk.key);
+        return rstore.saddAsync(vars.redis.receiveQueue, mk.key);
       }
       return undefined;
     });
 });
 
-socket.on("send", (e) => {
+socket.on(vars.socket.sendMessage, (e) => {
   log.info("send event received", e);
   const data = JSON.stringify(Object.assign({source: config.id}, e));
   const id = guid.create();
@@ -69,9 +78,8 @@ socket.on("send", (e) => {
     obj[`${index}`] = curr;
     return obj;
   }, {});
-  log.info("dataObj", dataObj);
   return rstore.multi()
-    .hmset(mk.key, "id", id)
+    .hmset(mk.key, "id", id.toString())
     .hmset(mk.key, "source", config.id)
     .hmset(mk.key, "target", e.target)
     .hmset(mk.key, "hash", hash)
@@ -81,7 +89,7 @@ socket.on("send", (e) => {
     .execAsync().then(() => {
       return Object.keys(dataObj).forEach((key) => {
         return socket.emit("publish", {
-          event: `router:${e.target}`,
+          event: `${vars.socket.channel}${e.target}`,
           data: {
             id: id,
             source: config.id,

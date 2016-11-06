@@ -3,16 +3,17 @@ import redis from "utils/redis";
 import {scheduleJob} from "node-schedule";
 import {lock} from "utils/thread";
 import config from "config";
+import vars from "../vars";
 
 //TODO: check age for messages
 //TODO: validate message against checksum
 //TODO: check if message has already been processed
 
-const log = logger("hosho:router:processors:receive-queue:");
+const log = logger(`hosho:router[${config.id}]:modules:receive-queue:`);
 const rstore = redis(config.redis);
 scheduleJob("* * * * * *", lock(() => {
   // log.info("starting job");
-  return rstore.smembersAsync("queue:receive").then((members = []) => {
+  return rstore.smembersAsync(vars.redis.receiveQueue).then((members = []) => {
     if (members.length > 0) {
       const messageKey = members[0];
       log.info(`message ready for processing - ${messageKey}`);
@@ -34,9 +35,9 @@ scheduleJob("* * * * * *", lock(() => {
         }).then((result) => {
           log.info("sending message to redis", result);
           return Promise.all([
-            rstore.publishAsync("hosho:messages", result),
+            rstore.publishAsync(vars.redis.messagePrefix, result),
             rstore.delAsync(messageKey, dataKey),
-            rstore.sremAsync("queue:receive", messageKey),
+            rstore.sremAsync(vars.redis.receiveQueue, messageKey),
           ]);
         });
       });
