@@ -19,7 +19,16 @@ export function lock(func) {
 }
 
 
-export function runScript(scriptPath) {
+export function runScript(scriptPath, args = [], env) {
   log.info(`launching ${scriptPath}`);
-  return childProcess.fork(scriptPath);
+  const proc = childProcess.fork(scriptPath, args, {env});
+  process.on("SIGTERM", () => {
+    log.info("SIGTERM - attempting to kill child");
+    return proc.kill("SIGTERM");
+  });
+  process.on("exit", () => {
+    log.info("exit - attempting to kill child");
+    return proc.kill("SIGTERM");
+  });
+  return proc;
 }

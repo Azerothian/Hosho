@@ -1,10 +1,11 @@
 import expect from "expect";
-import childProcess from "child_process";
+// import childProcess from "child_process";
 import Promise from "bluebird";
 import path from "path";
 // import socketClusterClient from "socketcluster-client";
 
 import logger from "utils/logger";
+import {runScript} from "utils/thread";
 // import vars from "../vars";
 
 import Client from "../client";
@@ -48,11 +49,14 @@ const processes = [];
 let sockets = {};
 
 function createApp(env) {
-  return childProcess.fork(appPath, [], {
-    env: Object.assign({
-      DEBUG: "*",
-    }, env),
-  });
+  return runScript(appPath, [], Object.assign({
+    DEBUG: process.env.DEBUG,
+  }, env));
+  // return childProcess.fork(appPath, [], {
+  //   env: Object.assign({
+  //     DEBUG: "*",
+  //   }, env),
+  // });
 }
 
 function createRouter({id, port, masterIp, masterPort}) {
@@ -105,18 +109,19 @@ describe("test", () => {
         // createSocket("2", routers["2"]),
         // createSocket("2-4", routers["2-4"]),
       ]).then(() => done());
-    }, 5000);
+    }, 10000);
   });
   after((done) => {
     log.info("disconnecting sockets");
-    Object.keys(sockets).forEach((key) => {
-      sockets[key].disconnect();
+    Promise.all(Object.keys(sockets).map((key) => {
+      return sockets[key].disconnect();
+    })).then(() => {
+      log.info("killing routers");
+      processes.forEach((proc) => {
+        return proc.kill();
+      });
+      done();
     });
-    log.info("killing routers");
-    processes.forEach((proc) => {
-      return proc.kill();
-    });
-    done();
   });
 
 

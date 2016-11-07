@@ -1,8 +1,8 @@
 
 import logger from "utils/logger";
-import socketClusterClient from "socketcluster-client";
+import socketClusterClient from "utils/sc-client";
 import config from "config";
-import Promise from "bluebird";
+
 const log = logger(`hosho:router[${config.id}]:broker:`);
 
 import vars from "./vars";
@@ -12,10 +12,16 @@ export function run(broker) {
   log.info(" >> Broker PID:", process.pid);
   if (config.enableBroker) {
     log.info("socketcluster client connecting", config.master);
-    const client = Promise.promisifyAll(socketClusterClient.connect(config.master));
+    const client = socketClusterClient.connect(config.master);
+    process.on("SIGTERM", () => {
+      client.disconnect(4501);
+    });
     client.on("connect", () => {
       log.info(`subscribing to event '${vars.socket.currentChannel}'`);
       return client.subscribe(vars.socket.currentChannel);
+    });
+    client.on("error", (e) => {
+      log.info("socket error", e.message);
     });
     client.on("message", (packet) => {
       if (packet.indexOf("{") > -1) {

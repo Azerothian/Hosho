@@ -1,10 +1,13 @@
 {
   "presets": ["stage-0", "es2015"],
   "plugins": [
-    ["module-alias", [
-      { "src": "./src/utils", "expose": "utils" },
-      { "src": "./config", "expose": "config" }
-    ]],
+    ["module-resolver", {
+      "root": ["./"],
+      "alias": {
+        "utils": "./src/utils",
+        "config": "./config.js"
+      }
+    }],
     "typecheck",
     "syntax-flow",
     "transform-flow-strip-types",

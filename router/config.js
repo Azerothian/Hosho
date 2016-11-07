@@ -4,6 +4,12 @@ module.exports = {
     // protocol: "ws",
     hostname: process.env.MASTER_HOST,
     port: process.env.MASTER_PORT,
+    autoReconnect: true,
+    autoReconnectOptions: {
+      initialDelay: 1000,
+      multiplier: 1.1,
+      maxDelay: 5000,
+    },
   },
   port: process.env.SOCKETCLUSTER_PORT,
   // server: {

@@ -1,11 +1,11 @@
-import Promise from "bluebird";
-import socketClusterClient from "socketcluster-client";
+import socketClusterClient from "utils/sc-client";
 import logger from "utils/logger";
 import redis from "utils/redis";
 import {createMD5Hash, chunkString} from "utils/text";
 import config from "config";
-import guid from "guid";
+import uuid from "node-uuid";
 import vars from "../vars";
+
 
 //This file proxy messages received via router:{id}
 //and sends out messages to outher routers
@@ -28,7 +28,27 @@ function createMessageKey(source, target, id, prefix = "send") {
 
 
 log.info("socketcluster client connecting", {hostname: "localhost", port: config.port});
-const socket = Promise.promisifyAll(socketClusterClient.connect({hostname: "localhost", port: config.port}));
+const socket = socketClusterClient.connect({
+  hostname: "localhost",
+  port: config.port,
+  autoReconnect: true,
+  autoReconnectOptions: {
+    initialDelay: 1000,
+    multiplier: 1.1,
+    maxDelay: 5000,
+  },
+});
+process.on("SIGTERM", () => {
+  log.info("SIGTERM - disconnect socket");
+  return socket.disconnect(4501); //TODO check socket state
+});
+process.on("exit", () => {
+  log.info("exit - disconnect socket");
+  return socket.disconnect(4501); //TODO check socket state
+});
+socket.on("error", (e) => {
+  log.info("socket error", e.message);
+});
 socket.on("connect", () => {
   log.info("socketcluster client connected");
   socket.subscribe(vars.socket.currentChannel);
@@ -70,7 +90,7 @@ socket.on(vars.socket.currentChannel, ({source, target, id, index, total, data})
 socket.on(vars.socket.sendMessage, (e) => {
   log.info("send event received", e);
   const data = JSON.stringify(Object.assign({source: config.id}, e));
-  const id = guid.create();
+  const id = uuid.v4();
   const mk = createMessageKey(config.id, e.target, id, "send");
   const hash = createMD5Hash(data);
   const dataArr = chunkString(data, config.messagePartLength);
